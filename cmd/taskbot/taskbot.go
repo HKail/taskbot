@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-
-	"github.com/gorilla/websocket"
+	"log"
 
 	"github.com/hkail/taskbot/botclient"
+	"github.com/hkail/taskbot/dto"
 	"github.com/hkail/taskbot/token"
+	"github.com/hkail/taskbot/websocket"
 )
 
 func main() {
@@ -20,12 +21,30 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(wsAP)
+	//user, err := botClient.Me(context.Background())
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	conn, _, err := websocket.DefaultDialer.Dial("wss://sandbox.api.sgroup.qq.com/websocket", nil)
-	if err != nil {
+	var atMessage websocket.ATMessageEventHandler = func(event *dto.WSPayload, data *dto.WSATMessageData) error {
+		fmt.Println(event.Type, event.OPCode)
+		fmt.Printf("%#v\n", data)
+
+		msg, err := botClient.MessageSend(context.Background(), data.ChannelID, &dto.PostChannelMessage{
+			Content: fmt.Sprintf("你也好：%s", dto.MentionUser(data.Author.ID)),
+			MsgID:   data.ID,
+		})
+		if err != nil {
+			log.Printf("err=%v", err)
+		}
+
+		fmt.Printf("%#v\n", msg)
+
+		return nil
+	}
+	intent := websocket.RegisterHandlers(atMessage)
+
+	if err = websocket.NewWSManager().Start(wsAP, botToken, intent); err != nil {
 		panic(err)
 	}
-
-	fmt.Println(conn)
 }

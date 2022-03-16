@@ -12,6 +12,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	defaultMessageChanSize = 10000
+)
+
 type messageChan chan *dto.WSPayload
 
 type closeErrorChan chan error
@@ -27,7 +31,10 @@ type WSClient struct {
 
 func NewWSClient(session *dto.WSSession) *WSClient {
 	return &WSClient{
-		session: session,
+		session:         session,
+		heartbeatTicket: time.NewTicker(45 * time.Second), // 在收到 hello 包之后, 会使用其返回的心跳时间进行重置
+		messageChan:     make(messageChan, defaultMessageChanSize),
+		closeChan:       make(closeErrorChan, 10),
 	}
 }
 
@@ -58,6 +65,7 @@ func (c *WSClient) Connect() error {
 
 	c.conn, _, err = websocket.DefaultDialer.Dial(c.session.URL, nil)
 	if err != nil {
+		log.Printf("websocket dial err=%v", err)
 		return err
 	}
 
@@ -95,8 +103,40 @@ func (c *WSClient) Resume() error {
 
 // Listening 已阻塞的形式开始监听 websocket 的所有事件
 func (c *WSClient) Listening() error {
+	// 从 websocket 中读取消息并发送至消息缓冲 chan 中
+	go c.readMessageToChan()
+	// 从消息缓冲 chan 中消费消息并处理
+	go c.listenAndHandleMessage()
 
-	return nil
+	for {
+		select {
+		case err := <-c.closeChan: // 连接关闭
+			if websocket.IsCloseError(err, errCodeSendMessageTooFast, errCodeSessionTimeout) { // 可以直接重连
+				return NewWSError(errCodeConnNeedReconnect, err.Error())
+			}
+
+			// TODO 需要处理 4900～4913 这些内部错误码
+			if websocket.IsCloseError(err) { // 可以重新鉴权
+				return NewWSError(errCodeConnNeedReIdentify, err.Error())
+			}
+
+			// 无法处理的错误
+			return NewWSError(errCodeConnNeedPanic, err.Error())
+
+		case <-c.heartbeatTicket.C: // 心跳维持
+			heartbeatData := &dto.WSPayload{
+				WSPayloadBase: dto.WSPayloadBase{
+					OPCode: dto.OPCodeHeartbeat,
+				},
+				Data: c.session.LastSeq,
+			}
+
+			err := c.SendMessage(heartbeatData)
+			if err != nil {
+				log.Printf("heartbeat send err=%v", err)
+			}
+		}
+	}
 }
 
 func (c *WSClient) readMessageToChan() {
@@ -135,12 +175,16 @@ func (c *WSClient) listenAndHandleMessage() {
 	for event := range c.messageChan {
 		c.saveSeq(event.Seq)
 		// 对 ready 事件进行特殊处理
-		if event.Type == "READY" {
+		if event.Type == dto.EventReady {
 			c.readyEventHandler(event)
 			continue
 		}
 
-		// TODO 具体 event 处理逻辑
+		fmt.Println("in this")
+		err := parseAndHandleEvent(event)
+		if err != nil {
+			log.Printf("parseAndHandleEvent has err=%v", err)
+		}
 	}
 }
 

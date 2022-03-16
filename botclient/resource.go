@@ -13,6 +13,12 @@ type uri string
 
 const (
 	gatewayURI uri = "/gateway"
+
+	// 发送消息
+	messageSend uri = "/channels/{channel_id}/messages"
+
+	// 用户信息
+	userMe uri = "/users/@me"
 )
 
 func (c *BotClient) getURL(endpoint uri) string {

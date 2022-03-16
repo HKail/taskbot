@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"fmt"
 	"log"
 	"runtime"
 
@@ -14,6 +13,10 @@ type WSManager struct {
 	sessionChan chan dto.WSSession
 }
 
+func NewWSManager() *WSManager {
+	return &WSManager{}
+}
+
 func (m *WSManager) Start(wsAp *dto.WSAccessPoint, token *token.Token, intent dto.Intent) error {
 	// TODO 支持分片
 	m.sessionChan = make(chan dto.WSSession, 1)
@@ -24,7 +27,7 @@ func (m *WSManager) Start(wsAp *dto.WSAccessPoint, token *token.Token, intent dt
 	}
 
 	for session := range m.sessionChan {
-		fmt.Println(session)
+		go m.newWSConnect(session)
 	}
 
 	return nil
@@ -43,7 +46,7 @@ func (m *WSManager) newWSConnect(session dto.WSSession) {
 	wsClient := NewWSClient(&session)
 	if err := wsClient.Connect(); err != nil {
 		log.Println(err)
-		m.sessionChan <- session // 连接失败, 丢回 session chan 进行重连
+		//m.sessionChan <- session // 连接失败, 丢回 session chan 进行重连
 		return
 	}
 
@@ -59,7 +62,20 @@ func (m *WSManager) newWSConnect(session dto.WSSession) {
 	}
 
 	if err := wsClient.Listening(); err != nil {
+		curSession := wsClient.session
 
+		if IsNeedReIdentifyError(err) { // 重新鉴权, 需要清空 session 和 lastSeq 信息
+			curSession.LastSeq = 0
+			curSession.ID = ""
+		}
+
+		if IsNeedPanicError(err) { // 无法重新鉴权的错误, 已经无法恢复了, 只能 panic
+			log.Printf("the connect can't re-identify err=%v", err)
+			panic(err)
+		}
+
+		// 将 session 发送回 session chan 中重新使用
+		m.sessionChan <- *curSession
 	}
 }
 

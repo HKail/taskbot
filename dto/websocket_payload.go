@@ -52,3 +52,6 @@ type WSReadyData struct {
 	} `json:"user"`
 	Shard []uint32 `json:"shard"`
 }
+
+// WSATMessageData 用于解析 at 机器人的消息
+type WSATMessageData Message

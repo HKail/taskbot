@@ -3,15 +3,15 @@ package websocket
 import (
 	"fmt"
 
-	"github.com/hkail/taskbot/dto"
+	dto2 "github.com/hkail/taskbot/app/dto"
 )
 
-func parseAndHandleEvent(event *dto.WSPayload) error {
+func parseAndHandleEvent(event *dto2.WSPayload) error {
 	fmt.Println(event)
 
-	if event.OPCode == dto.OPCodeDispatch {
+	if event.OPCode == dto2.OPCodeDispatch {
 		switch event.Type {
-		case dto.EventAtMessageCreate:
+		case dto2.EventAtMessageCreate:
 			fmt.Println("www")
 			return atMessageHandler(event, event.RawMessage)
 		}
@@ -20,8 +20,8 @@ func parseAndHandleEvent(event *dto.WSPayload) error {
 	return nil
 }
 
-func atMessageHandler(event *dto.WSPayload, message []byte) error {
-	data := &dto.WSATMessageData{}
+func atMessageHandler(event *dto2.WSPayload, message []byte) error {
+	data := &dto2.WSATMessageData{}
 	if err := parseData(message, data); err != nil {
 		return err
 	}

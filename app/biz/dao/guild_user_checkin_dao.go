@@ -5,13 +5,15 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/hkail/taskbot/app/util"
+
 	"github.com/jmoiron/sqlx"
 )
 
 // GetUserCheckinInfo 获取用户签到信息
 // 当获取不到数据时返回 nil, nil
 func (dao *Dao) GetUserCheckinInfo(ctx context.Context, t time.Time, gid, uid int) (*GuildUserCheckin, error) {
-	yearMonth := getYearmonth(t)
+	yearMonth := util.GetYearmonth(t)
 	userCheckin := &GuildUserCheckin{}
 	err := dao.db.GetContext(ctx, userCheckin, "SELECT * FROM guild_users_checkin WHERE guild_id = ? AND user_id = ? AND yearmonth = ? LIMIT 1",
 		gid, uid, yearMonth)
@@ -28,8 +30,8 @@ func (dao *Dao) GetUserCheckinInfo(ctx context.Context, t time.Time, gid, uid in
 
 // Checkin 用户签到
 func (dao *Dao) Checkin(ctx context.Context, t time.Time, gid, uid int) (todayFirstCheckin bool, err error) {
-	yearMonth := getYearmonth(t)
-	dayMask := getDayMask(t)
+	yearMonth := util.GetYearmonth(t)
+	dayMask := util.GetDayMask(t)
 	todayFirstCheckin = true
 
 	err = dao.txx(ctx, func(tx *sqlx.Tx) error {
@@ -121,13 +123,4 @@ func (dao *Dao) txx(ctx context.Context, fn func(tx *sqlx.Tx) error) error {
 	}
 
 	return tx.Commit()
-}
-
-func getYearmonth(t time.Time) int {
-	return t.Year()*100 + int(t.Month())
-}
-
-// getDayMask 获取当天日期 bitmap 掩码
-func getDayMask(t time.Time) uint32 {
-	return 1 << (t.Day() - 1)
 }

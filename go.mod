@@ -8,4 +8,5 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jmoiron/sqlx v1.3.4 // indirect
 	github.com/tidwall/gjson v1.14.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

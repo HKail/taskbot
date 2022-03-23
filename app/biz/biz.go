@@ -2,11 +2,14 @@ package biz
 
 import (
 	"github.com/hkail/taskbot/app/biz/dao"
+	"github.com/hkail/taskbot/app/botclient"
 	"github.com/hkail/taskbot/app/conf"
 )
 
 type Biz struct {
-	dao  *dao.Dao
+	dao       *dao.Dao
+	botClient *botclient.BotClient
+
 	conf *conf.AppConf
 }
 

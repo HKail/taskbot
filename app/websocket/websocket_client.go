@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	dto2 "github.com/hkail/taskbot/app/dto"
+	"github.com/hkail/taskbot/app/dto"
 
 	"github.com/gorilla/websocket"
 )
@@ -16,7 +16,7 @@ const (
 	defaultMessageChanSize = 10000
 )
 
-type messageChan chan *dto2.WSPayload
+type messageChan chan *dto.WSPayload
 
 type closeErrorChan chan error
 
@@ -24,12 +24,12 @@ type WSClient struct {
 	version         int
 	conn            *websocket.Conn
 	heartbeatTicket *time.Ticker
-	session         *dto2.WSSession
+	session         *dto.WSSession
 	messageChan     messageChan
 	closeChan       closeErrorChan
 }
 
-func NewWSClient(session *dto2.WSSession) *WSClient {
+func NewWSClient(session *dto.WSSession) *WSClient {
 	return &WSClient{
 		session:         session,
 		heartbeatTicket: time.NewTicker(45 * time.Second), // 在收到 hello 包之后, 会使用其返回的心跳时间进行重置
@@ -48,7 +48,7 @@ func (c *WSClient) Close() {
 }
 
 // SendMessage 消息发送
-func (c *WSClient) SendMessage(message *dto2.WSPayload) error {
+func (c *WSClient) SendMessage(message *dto.WSPayload) error {
 	// 此处必定不会出错, 因此忽略 error
 	m, _ := json.Marshal(message)
 
@@ -78,31 +78,33 @@ func (c *WSClient) Identify() error {
 		return errors.New("zero is an invalid intent value")
 	}
 
-	event := &dto2.WSPayload{
-		Data: &dto2.WSIdentityData{
+	event := &dto.WSPayload{
+		Data: &dto.WSIdentityData{
 			Token:   c.session.Token.GetString(),
 			Intents: c.session.Intent,
 		},
 	}
-	event.OPCode = dto2.OPCodeIdentify
+	event.OPCode = dto.OPCodeIdentify
 
 	return c.SendMessage(event)
 }
 
 // Resume 重连
 func (c *WSClient) Resume() error {
-	event := &dto2.WSPayload{
-		Data: &dto2.WSResumeData{
+	event := &dto.WSPayload{
+		Data: &dto.WSResumeData{
 			Token: c.session.Token.GetString(),
 		},
 	}
-	event.OPCode = dto2.OPCodeResume
+	event.OPCode = dto.OPCodeResume
 
 	return c.SendMessage(event)
 }
 
 // Listening 已阻塞的形式开始监听 websocket 的所有事件
 func (c *WSClient) Listening() error {
+	log.Printf("wsclient was listening...")
+
 	// 从 websocket 中读取消息并发送至消息缓冲 chan 中
 	go c.readMessageToChan()
 	// 从消息缓冲 chan 中消费消息并处理
@@ -124,9 +126,9 @@ func (c *WSClient) Listening() error {
 			return NewWSError(errCodeConnNeedPanic, err.Error())
 
 		case <-c.heartbeatTicket.C: // 心跳维持
-			heartbeatData := &dto2.WSPayload{
-				WSPayloadBase: dto2.WSPayloadBase{
-					OPCode: dto2.OPCodeHeartbeat,
+			heartbeatData := &dto.WSPayload{
+				WSPayloadBase: dto.WSPayloadBase{
+					OPCode: dto.OPCodeHeartbeat,
 				},
 				Data: c.session.LastSeq,
 			}
@@ -149,7 +151,7 @@ func (c *WSClient) readMessageToChan() {
 			return
 		}
 
-		event := &dto2.WSPayload{}
+		event := &dto.WSPayload{}
 		if err := json.Unmarshal(message, &event); err != nil {
 			log.Println(err)
 			continue
@@ -175,12 +177,11 @@ func (c *WSClient) listenAndHandleMessage() {
 	for event := range c.messageChan {
 		c.saveSeq(event.Seq)
 		// 对 ready 事件进行特殊处理
-		if event.Type == dto2.EventReady {
+		if event.Type == dto.EventReady {
 			c.readyEventHandler(event)
 			continue
 		}
 
-		fmt.Println("in this")
 		err := parseAndHandleEvent(event)
 		if err != nil {
 			log.Printf("parseAndHandleEvent has err=%v", err)
@@ -194,15 +195,15 @@ func (c *WSClient) saveSeq(seq uint32) {
 	}
 }
 
-func (c *WSClient) isBuildInEventAndHandle(event *dto2.WSPayload) bool {
+func (c *WSClient) isBuildInEventAndHandle(event *dto.WSPayload) bool {
 	switch event.OPCode {
-	case dto2.OPCodeHello: // 完成连接, 需要开始维持心跳
+	case dto.OPCodeHello: // 完成连接, 需要开始维持心跳
 		c.startHeartbeatTicker(event.RawMessage)
-	case dto2.OPCodeReconnect: // 达到连接时长, 需要进行重连
+	case dto.OPCodeReconnect: // 达到连接时长, 需要进行重连
 		c.closeChan <- ErrNeedReconnect
-	case dto2.OPCodeInvalidSession: // session 无效, 需要重新鉴权
+	case dto.OPCodeInvalidSession: // session 无效, 需要重新鉴权
 		c.closeChan <- ErrInvalidSession
-	case dto2.OPCodeHeartbeatACK: // 心跳 ack, 无需处理
+	case dto.OPCodeHeartbeatACK: // 心跳 ack, 无需处理
 	default:
 		return false
 	}
@@ -211,7 +212,7 @@ func (c *WSClient) isBuildInEventAndHandle(event *dto2.WSPayload) bool {
 }
 
 func (c *WSClient) startHeartbeatTicker(message []byte) {
-	helloData := &dto2.WSHelloData{}
+	helloData := &dto.WSHelloData{}
 	if err := parseData(message, helloData); err != nil {
 		log.Println(err)
 		// TODO 是否应该提前结束呢
@@ -220,8 +221,8 @@ func (c *WSClient) startHeartbeatTicker(message []byte) {
 	c.heartbeatTicket.Reset(time.Duration(helloData.HeartbeatInterval) * time.Millisecond)
 }
 
-func (c *WSClient) readyEventHandler(event *dto2.WSPayload) {
-	readyData := &dto2.WSReadyData{}
+func (c *WSClient) readyEventHandler(event *dto.WSPayload) {
+	readyData := &dto.WSReadyData{}
 	if err := parseData(event.RawMessage, readyData); err != nil {
 		log.Println(err)
 		// TODO 是否应该提前结束呢

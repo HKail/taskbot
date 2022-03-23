@@ -4,23 +4,23 @@ import (
 	"log"
 	"runtime"
 
-	dto2 "github.com/hkail/taskbot/app/dto"
-	token2 "github.com/hkail/taskbot/app/token"
+	"github.com/hkail/taskbot/app/dto"
+	"github.com/hkail/taskbot/app/token"
 )
 
 // WSManager 用于启动和管理 websocket 链接
 type WSManager struct {
-	sessionChan chan dto2.WSSession
+	sessionChan chan dto.WSSession
 }
 
 func NewWSManager() *WSManager {
 	return &WSManager{}
 }
 
-func (m *WSManager) Start(wsAp *dto2.WSAccessPoint, token *token2.Token, intent dto2.Intent) error {
+func (m *WSManager) Start(wsAp *dto.WSAccessPoint, token *token.Token, intent dto.Intent) error {
 	// TODO 支持分片
-	m.sessionChan = make(chan dto2.WSSession, 1)
-	m.sessionChan <- dto2.WSSession{
+	m.sessionChan = make(chan dto.WSSession, 1)
+	m.sessionChan <- dto.WSSession{
 		URL:    wsAp.URL,
 		Token:  *token,
 		Intent: intent,
@@ -33,7 +33,7 @@ func (m *WSManager) Start(wsAp *dto2.WSAccessPoint, token *token2.Token, intent 
 	return nil
 }
 
-func (m *WSManager) newWSConnect(session dto2.WSSession) {
+func (m *WSManager) newWSConnect(session dto.WSSession) {
 	defer func() {
 		// 防止进程退出以及打印错误堆栈信息
 		if err := recover(); err != nil {
@@ -79,7 +79,7 @@ func (m *WSManager) newWSConnect(session dto2.WSSession) {
 	}
 }
 
-func panicHandler(e interface{}, session dto2.WSSession) {
+func panicHandler(e interface{}, session dto.WSSession) {
 	buf := make([]byte, 1024)
 	buf = buf[:runtime.Stack(buf, false)]
 

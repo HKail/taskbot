@@ -13,7 +13,7 @@ type AppConf struct {
 
 type BotConf struct {
 	IsSandbox bool   `yaml:"is_sandbox"`
-	AppID     string `yaml:"app_id"`
+	AppID     uint64 `yaml:"app_id"`
 	Token     string `yaml:"token"`
 	Secret    string `yaml:"secret"`
 }

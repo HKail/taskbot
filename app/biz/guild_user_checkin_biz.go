@@ -10,14 +10,14 @@ import (
 )
 
 // UserCheckin 用户签到
-func (biz *Biz) UserCheckin(ctx context.Context, t time.Time, gid, uid int) (todayFirstCheckin bool, err error) {
+func (biz *Biz) UserCheckin(ctx context.Context, t time.Time, gid, uid uint64) (todayFirstCheckin bool, err error) {
 	// TODO 使用缓存判断用户当天是否已签到
 
 	return biz.dao.Checkin(ctx, t, gid, uid)
 }
 
 // GetUserContCheckinDays 获取用户连续签到天数
-func (biz *Biz) GetUserContCheckinDays(ctx context.Context, gid, uid int) (int, error) {
+func (biz *Biz) GetUserContCheckinDays(ctx context.Context, gid, uid uint64) (int, error) {
 	userCheckins, err := biz.dao.ListUserCheckinInfos(ctx, gid, uid)
 	if err != nil {
 		log.Printf("GetUserContCheckinDays.ListUserCheckinInfos has err=%v", err)

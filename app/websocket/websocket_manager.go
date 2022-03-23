@@ -39,7 +39,7 @@ func (m *WSManager) newWSConnect(session dto.WSSession) {
 		if err := recover(); err != nil {
 			panicHandler(err, session)
 			// 放回 session chan 中, 以尝试重新建立 websocket 链接
-			m.sessionChan <- session
+			//m.sessionChan <- session
 		}
 	}()
 

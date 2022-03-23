@@ -13,14 +13,15 @@ type Biz struct {
 	conf *conf.AppConf
 }
 
-func NewBiz(conf *conf.AppConf) (*Biz, error) {
+func NewBiz(conf *conf.AppConf, botClient *botclient.BotClient) (*Biz, error) {
 	newDao, err := dao.NewDao(conf.DB)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Biz{
-		dao:  newDao,
-		conf: conf,
+		dao:       newDao,
+		botClient: botClient,
+		conf:      conf,
 	}, nil
 }

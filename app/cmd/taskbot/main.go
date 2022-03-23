@@ -22,12 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	defaultBiz, err := biz.NewBiz(appConf)
-	if err != nil {
-		panic(err)
-	}
-
-	botToken := token.NewBotToken(101996085, "EV4ju1yahUBgXe7xOjGqzv45QpSUONVK")
+	botToken := token.NewBotToken(appConf.Bot.AppID, appConf.Bot.Token)
 	botClient := botclient.NewBotClient(appConf.Bot.IsSandbox, botToken)
 
 	wsAP, err := botClient.GetWSAccessPoint(context.Background())
@@ -35,6 +30,10 @@ func main() {
 		panic(err)
 	}
 
+	defaultBiz, err := biz.NewBiz(appConf, botClient)
+	if err != nil {
+		panic(err)
+	}
 	var atMessage websocket.ATMessageEventHandler = defaultBiz.ATMessageEventHandler
 	intent := websocket.RegisterHandlers(atMessage)
 

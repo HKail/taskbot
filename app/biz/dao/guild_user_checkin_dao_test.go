@@ -14,8 +14,8 @@ func TestDao_Checkin(t *testing.T) {
 	type args struct {
 		ctx context.Context
 		t   time.Time
-		gid int
-		uid int
+		gid uint64
+		uid uint64
 	}
 	tests := []struct {
 		name                  string

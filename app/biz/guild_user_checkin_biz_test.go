@@ -79,8 +79,8 @@ func TestBiz_GetUserContCheckinDays(t *testing.T) {
 
 	type args struct {
 		ctx context.Context
-		gid int
-		uid int
+		gid uint64
+		uid uint64
 	}
 	tests := []struct {
 		name    string

@@ -12,7 +12,7 @@ import (
 
 // GetUserCheckinInfo 获取用户签到信息
 // 当获取不到数据时返回 nil, nil
-func (dao *Dao) GetUserCheckinInfo(ctx context.Context, t time.Time, gid, uid int) (*GuildUserCheckin, error) {
+func (dao *Dao) GetUserCheckinInfo(ctx context.Context, t time.Time, gid, uid uint64) (*GuildUserCheckin, error) {
 	yearMonth := util.GetYearmonth(t)
 	userCheckin := &GuildUserCheckin{}
 	err := dao.db.GetContext(ctx, userCheckin, "SELECT * FROM guild_users_checkin WHERE guild_id = ? AND user_id = ? AND yearmonth = ? LIMIT 1",
@@ -29,7 +29,7 @@ func (dao *Dao) GetUserCheckinInfo(ctx context.Context, t time.Time, gid, uid in
 }
 
 // Checkin 用户签到
-func (dao *Dao) Checkin(ctx context.Context, t time.Time, gid, uid int) (todayFirstCheckin bool, err error) {
+func (dao *Dao) Checkin(ctx context.Context, t time.Time, gid, uid uint64) (todayFirstCheckin bool, err error) {
 	yearMonth := util.GetYearmonth(t)
 	dayMask := util.GetDayMask(t)
 	todayFirstCheckin = true
@@ -59,7 +59,7 @@ func (dao *Dao) Checkin(ctx context.Context, t time.Time, gid, uid int) (todayFi
 }
 
 // ListUserCheckinInfos 获取用户历史签到信息
-func (dao *Dao) ListUserCheckinInfos(ctx context.Context, gid, uid int) ([]GuildUserCheckin, error) {
+func (dao *Dao) ListUserCheckinInfos(ctx context.Context, gid, uid uint64) ([]GuildUserCheckin, error) {
 	// 对于一个频道而言, 一个用户一年最多也只会有 12 条记录, 因此无需考虑分批获取
 	rows, err := dao.db.QueryxContext(ctx, "SELECT * FROM guild_users_checkin WHERE guild_id = ? AND user_id = ?", gid, uid)
 	if err != nil {
@@ -80,7 +80,7 @@ func (dao *Dao) ListUserCheckinInfos(ctx context.Context, gid, uid int) ([]Guild
 	return userCheckins, nil
 }
 
-func (dao *Dao) txGetUserCheckinForUpdate(ctx context.Context, tx sqlx.QueryerContext, yearMonth int, gid, uid int) (*GuildUserCheckin, error) {
+func (dao *Dao) txGetUserCheckinForUpdate(ctx context.Context, tx sqlx.QueryerContext, yearMonth int, gid, uid uint64) (*GuildUserCheckin, error) {
 	userCheckin := &GuildUserCheckin{}
 	err := sqlx.GetContext(ctx, tx, userCheckin, "SELECT * FROM guild_users_checkin WHERE guild_id = ? AND user_id = ? AND yearmonth = ? LIMIT 1",
 		gid, uid, yearMonth)
@@ -95,14 +95,14 @@ func (dao *Dao) txGetUserCheckinForUpdate(ctx context.Context, tx sqlx.QueryerCo
 	return userCheckin, nil
 }
 
-func (dao *Dao) txCreateUserCheckinInfo(ctx context.Context, tx sqlx.ExecerContext, yearMonth int, dayMask uint32, gid, uid int) error {
+func (dao *Dao) txCreateUserCheckinInfo(ctx context.Context, tx sqlx.ExecerContext, yearMonth int, dayMask uint32, gid, uid uint64) error {
 	query := "INSERT INTO guild_users_checkin(guild_id, user_id, yearmonth, days) VALUES(?, ?, ?, ?)"
 	_, err := tx.ExecContext(ctx, query, gid, uid, yearMonth, dayMask)
 
 	return err
 }
 
-func (dao *Dao) txUpdateUserCheckinInfo(ctx context.Context, tx sqlx.ExecerContext, yearMonth int, dayMask uint32, gid, uid int) error {
+func (dao *Dao) txUpdateUserCheckinInfo(ctx context.Context, tx sqlx.ExecerContext, yearMonth int, dayMask uint32, gid, uid uint64) error {
 	query := "UPDATE guild_users_checkin SET days=(days|?) WHERE guild_id = ? AND user_id = ? AND yearmonth = ?"
 	_, err := tx.ExecContext(ctx, query, dayMask, gid, uid, yearMonth)
 

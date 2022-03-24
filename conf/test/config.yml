@@ -1,0 +1,13 @@
+bot:
+  is_sandbox: false
+  app_id: 0
+  token: "<TOKEN>"
+  secret: "<SECRET>"
+
+db:
+  mysql:
+    data_source: "taskbot_prod:123456@tcp(127.0.0.1:3306)/taskbot?parseTime=true&charset=utf8mb4,utf8&autocommit=true&loc=Asia%2FShanghai"
+  redis:
+    addr: ""
+    password: ""
+    db: 0

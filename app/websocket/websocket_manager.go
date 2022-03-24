@@ -63,6 +63,7 @@ func (m *WSManager) newWSConnect(session dto.WSSession) {
 
 	if err := wsClient.Listening(); err != nil {
 		curSession := wsClient.session
+		log.Printf("wsClient.Listening has err=%v", err)
 
 		if IsNeedReIdentifyError(err) { // 重新鉴权, 需要清空 session 和 lastSeq 信息
 			curSession.LastSeq = 0

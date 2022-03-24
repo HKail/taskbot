@@ -113,12 +113,12 @@ func (c *WSClient) Listening() error {
 	for {
 		select {
 		case err := <-c.closeChan: // 连接关闭
-			if websocket.IsCloseError(err, errCodeSendMessageTooFast, errCodeSessionTimeout, errCodeConnNeedReconnect) { // 可以直接重连
+			if IsNeedReconnectError(err) || websocket.IsCloseError(err, errCodeSendMessageTooFast, errCodeSessionTimeout) { // 可以直接重连
 				return NewWSError(errCodeConnNeedReconnect, err.Error())
 			}
 
 			// TODO 需要处理 4900～4913 这些内部错误码
-			if websocket.IsCloseError(err, errCodeConnNeedReIdentify) { // 可以重新鉴权
+			if IsNeedReIdentifyError(err) || websocket.IsCloseError(err, errCodeConnNeedReIdentify) { // 可以重新鉴权
 				return NewWSError(errCodeConnNeedReIdentify, err.Error())
 			}
 

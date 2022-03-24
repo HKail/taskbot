@@ -1,5 +1,5 @@
 bot:
-  is_sandbox: false
+  is_sandbox: true
   app_id: 0
   token: "<TOKEN>"
   secret: "<SECRET>"

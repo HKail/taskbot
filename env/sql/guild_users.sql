@@ -7,4 +7,4 @@ CREATE TABLE `guild_users` (
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uniq_gid_uid` (`guild_id`,`user_id`) COMMENT '频道用户唯一索引'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='频道用户表'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='频道用户表'

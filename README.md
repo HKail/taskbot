@@ -4,7 +4,24 @@
 
 ## Usage
 
-1. 待补充
+1. 拉取代码到本地
+
+    ```shell
+    # 拉取工程代码
+    $ git clone https://github.com/HKail/taskbot.git
+    $ cd taskbot
+    ```
+
+2. 修改配置文件
+
+    将`conf/prod/config.yml`中的机器人配置和数据库配置修改为自己的配置
+
+3. 执行`env/sql/*`下的 SQL 文件进行建表
+
+4. 部署
+
+    1. 自行编译`app/cmd/taskbot/main.go`文件
+    2. 直接使用利用根目录的`Dockerfile`文件进行容器化部署
 
 ## Feature
 
